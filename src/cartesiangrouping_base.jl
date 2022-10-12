@@ -101,7 +101,7 @@ end
 #     # cartpairs = CartesianIndex.(jj₁, jj₂)
 #     return cartpairs
 # end
-function construct_cartpairs(jj₁::AbstractVector{<:Integer}, jj₂::AbstractVector{<:Integer})
+function construct_cartpairs(jj₁::AbstractVector{T}, jj₂::AbstractVector{S}) where {T<:Integer, S<:Integer}
     Tₒ = promote_type(S, T)
     ξ = Vector{Tuple{Tₒ, Tₒ}}(undef, length(jj₁))
     @inbounds for i ∈ eachindex(jj₁, jj₂, ξ)
@@ -113,7 +113,7 @@ end
 # 2021-07-26: varargs version -- albeit, it is actually faster in most cases to just
 # compute the crosses via repeated binary operations.
 function construct_cartpairs(jj₁::AbstractVector{<:Integer}, jj₂::AbstractVector{<:Integer},
-                             jj₃...)
+                             jjs::Vararg{U, N}) where {T<:Integer, S<:Integer} where {U<:AbstractVector{W}, N} where {W<:Integer}
     Tₒ = promote_type(S, T, W)
     ξ = Vector{NTuple{N+2, Tₒ}}(undef, length(jj₁))
     @inbounds for i ∈ eachindex(jj₁, jj₂, ξ, jjs...)
