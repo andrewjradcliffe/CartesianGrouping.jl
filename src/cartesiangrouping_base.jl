@@ -102,18 +102,24 @@ end
 #     return cartpairs
 # end
 function construct_cartpairs(jj₁::AbstractVector{<:Integer}, jj₂::AbstractVector{<:Integer})
-    ξ = [(jj₁[p], jj₂[p]) for p = 1:length(jj₁)] # p in eachindex(jj₁)
-    # cartpairs = CartesianIndex.(jj₁, jj₂)
-    return ξ
+    Tₒ = promote_type(S, T)
+    ξ = Vector{Tuple{Tₒ, Tₒ}}(undef, length(jj₁))
+    @inbounds for i ∈ eachindex(jj₁, jj₂, ξ)
+        ξ[i] = (jj₁[i], jj₂[i])
+    end
+    ξ
 end
 
 # 2021-07-26: varargs version -- albeit, it is actually faster in most cases to just
 # compute the crosses via repeated binary operations.
 function construct_cartpairs(jj₁::AbstractVector{<:Integer}, jj₂::AbstractVector{<:Integer},
                              jj₃...)
-    ξ = [(jj₁[p], jj₂[p], getindex.(jj₃, p)...) for p = 1:length(jj₁)]
-    # ξ = CartesianIndex.(jj₁, jj₂, jj₃...)
-    return ξ
+    Tₒ = promote_type(S, T, W)
+    ξ = Vector{NTuple{N+2, Tₒ}}(undef, length(jj₁))
+    @inbounds for i ∈ eachindex(jj₁, jj₂, ξ, jjs...)
+        ξ[i] = (jj₁[i], jj₂[i], ntuple(k -> jjs[k][i], Val(N))...)
+    end
+    ξ
 end
 # each Gⱼ : {p | ξₚ = Ŝⱼ}, Ŝⱼ ≡ the jᵗʰ element in Ŝ
 # function getall_cartesianindexsets(cartset, cartpairs)
@@ -175,9 +181,9 @@ end
 # necessarycond2(Γnew)
 ################################################################
 #### Essential functions: p. 18-20
-function indexsets_tojj(Γ::Vector{Vector{Int}}, N::Int)
+function indexsets_tojj(Γ::Vector{Vector{Int}})
     J = length(Γ)
-    jj = Vector{Int}(undef, N)
+    jj = Vector{Int}(undef, sum(length, Γ))
     for j = 1:J
         for n in Γ[j]
             @inbounds jj[n] = j
@@ -185,7 +191,7 @@ function indexsets_tojj(Γ::Vector{Vector{Int}}, N::Int)
     end
     return jj
 end
-indexsets_tojj(Γ) = indexsets_tojj(Γ, sum(length.(Γ)))
+# indexsets_tojj(Γ) = indexsets_tojj(Γ, sum(length, Γ))
 #### jj -- routes to/from one-hot matrices
 function onehot_sparse(jj::AbstractVector{<:Integer}, P::Integer)
     return sparse([p for p = 1:P], jj, ones(Int, P))
@@ -227,7 +233,7 @@ function onehot_toΓ(X::AbstractSparseMatrix{<:Real, <:Integer})
     # Γ = [[rowvals[i] for i in nzrange(X, j)] for j = 1:X.n]
     return Γ
 end
-# onehot_tojj(X) = indexsets_tojj(onehot_toΓ(X))
+onehot_tojj(X) = indexsets_tojj(onehot_toΓ(X))
 #### Conversion of Γ, jj to ELM_y, n_y: p. 44
 function ELMy_ny(Γ::AbstractVector{<:AbstractVector{<:Integer}})
     J = length(Γ)
