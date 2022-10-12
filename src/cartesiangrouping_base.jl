@@ -120,8 +120,8 @@ end
 #     Γ = [findall(x -> isequal(id, x), cartpairs) for id in cartset]
 # end
 # # in fact, this is the conversion: jj_to_Γ -- see note p. 40 for elaboration
-# getall_cartesianindexsets(cartpairs) = begin
-#     getall_cartesianindexsets(unique!(sort(cartpairs)), cartpairs) end
+# getall_cartesianindexsets(cartpairs) =
+#     getall_cartesianindexsets(unique!(sort(cartpairs)), cartpairs)
 #### p. 55-57, 2021-07-13
 function getall_cartesianindexsets(F̂::Vector{T} where {T<:Function}, ξ)
     Γ = [findall(fⱼ, ξ) for fⱼ in F̂]
@@ -191,8 +191,8 @@ function onehot_sparse(jj::AbstractVector{<:Integer}, P::Integer)
     return sparse([p for p = 1:P], jj, ones(Int, P))
 end
 onehot_sparse(jj::AbstractVector{<:Integer}) = onehot_sparse(jj, length(jj))
-onehot_sparse(Γ::AbstractVector{<:AbstractVector{<:Integer}}) = begin
-    onehot_sparse(indexsets_tojj(Γ)) end
+onehot_sparse(Γ::AbstractVector{<:AbstractVector{<:Integer}}) =
+    onehot_sparse(indexsets_tojj(Γ))
 
 function onehot_dense(jj::AbstractVector{<:Integer}, P::Integer, J::Integer)
     X = zeros(Int, P, J)
@@ -202,24 +202,26 @@ function onehot_dense(jj::AbstractVector{<:Integer}, P::Integer, J::Integer)
     return X
 end
 onehot_dense(jj::AbstractVector{<:Integer}) = onehot_dense(jj, length(jj), length(unique(jj)))
-onehot_dense(Γ::AbstractVector{<:AbstractVector{<:Integer}}) = begin
-    onehot_dense(indexsets_tojj(Γ)) end
+onehot_dense(Γ::AbstractVector{<:AbstractVector{<:Integer}}) =
+    onehot_dense(indexsets_tojj(Γ))
 #### Conversion of one-hot matrix to Γ
 # dense matrices
 function denseonehotcol_toGⱼ(xⱼ)
     Gⱼ = findall(!iszero, xⱼ)
     return Gⱼ
 end
-function onehot_toΓ(X::AbstractMatrix{<:Integer})
+function onehot_toΓ(X::AbstractMatrix{<:Real})
     Γ = [denseonehotcol_toGⱼ(xⱼ) for xⱼ in eachcol(X)]
     return Γ
 end
+onehot_to(X::AbstractMatrix{<:Real}) = map(Base.Fix1(findall, !iszero), eachcol(X))
+
 # sparse matrices
 function sparseonehotcol_toGⱼ(rowvals, nzrange)
     Gⱼ = [rowvals[i] for i in nzrange]
     return Gⱼ
 end
-function onehot_toΓ(X::AbstractSparseMatrix{<:Integer, <:Integer})
+function onehot_toΓ(X::AbstractSparseMatrix{<:Real, <:Integer})
     Γ = [sparseonehotcol_toGⱼ(rowvals(X), nzrange(X, j)) for j = 1:X.n]
     # Alternative
     # Γ = [[rowvals[i] for i in nzrange(X, j)] for j = 1:X.n]
@@ -248,11 +250,11 @@ struct BasicGroup{T<:AbstractVector{<:AbstractVector{<:Integer}},
     P::Q
 end
 # Constructor which will see major use -- the single interface
-BasicGroup(Γ::AbstractVector{<:AbstractVector{<:Integer}}) = begin
-    BasicGroup(Γ, indexsets_tojj(Γ), length(Γ), sum(length.(Γ))) end
+BasicGroup(Γ::AbstractVector{<:AbstractVector{<:Integer}}) =
+    BasicGroup(Γ, indexsets_tojj(Γ), length(Γ), sum(length.(Γ)))
 # Additional outer constructors
-BasicGroup(X::AbstractMatrix{<:Integer}) = BasicGroup(onehot_toΓ(X))
-BasicGroup(X::AbstractSparseMatrix{<:Integer, <:Integer}) = BasicGroup(onehot_toΓ(X))
+BasicGroup(X::AbstractMatrix{<:Real}) = BasicGroup(onehot_toΓ(X))
+BasicGroup(X::AbstractSparseMatrix{<:Real, <:Integer}) = BasicGroup(onehot_toΓ(X))
 # Additional constructor -- USE WITH CAUTION! (it can be abused)
 BasicGroup(jj::AbstractVector{<:Integer}) = BasicGroup(getall_cartesianindexsets(jj))
 
@@ -325,11 +327,11 @@ struct AugmentedGroup{T<:AbstractVector{<:AbstractVector{<:AbstractVector{<:Inte
     N::O
 end
 # Primary constructor
-AugmentedGroup(Γ::AbstractVector{<:AbstractVector{<:Integer}}, P::Int, M::Int) = begin
-    AugmentedGroup(construct_allΓ(Γ, P, M), length(Γ), P, M, M * P) end
+AugmentedGroup(Γ::AbstractVector{<:AbstractVector{<:Integer}}, P::Int, M::Int) =
+    AugmentedGroup(construct_allΓ(Γ, P, M), length(Γ), P, M, M * P)
 # Convenience constructor which simplifies use
-AugmentedGroup(a::BasicGroup, M::Int) = begin
-    AugmentedGroup(construct_allΓ(a.Γ, a.P, M), a.J, a.P, M, M * a.P) end
+AugmentedGroup(a::BasicGroup, M::Int) =
+    AugmentedGroup(construct_allΓ(a.Γ, a.P, M), a.J, a.P, M, M * a.P)
 # Other operations
 function Base.isequal(a::AugmentedGroup, b::AugmentedGroup)
     a.allΓ == b.allΓ && a.J == b.J && a.P == b.P && a.M == b.M && a.N == b.N
